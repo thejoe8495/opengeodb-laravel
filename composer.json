@@ -1,0 +1,12 @@
+{
+    "name": "equi/opengeodb",
+    "description": "Package for the OpengeoDB",
+    "authors": [
+        {
+            "name": "Joerg Stemmer",
+            "email": "opensource@equivalents.de"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
