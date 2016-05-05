@@ -22,8 +22,8 @@ class GeodbTextdata extends Model
             })->get();
     }
     
-    public function GeodbCoordinates(){
-        return $this->belongsTo('Equi\Opengeodb\Models\GeodbCoordinates',"loc_id", "loc_id");
+    public function GeodbCoordinate(){
+        return $this->belongsTo('Equi\Opengeodb\Models\GeodbCoordinate',"loc_id", "loc_id");
     }
     
     public function GeodbTextdata(){

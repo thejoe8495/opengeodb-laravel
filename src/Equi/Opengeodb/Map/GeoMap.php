@@ -5,15 +5,17 @@ use Equi\Opengeodb\Models\GeodbMaster;
 class GeoMap extends map {
 
     private $loc_id;
-    private $colors = [];
+    private $fileexists = false;
 
     private $latitudeMin;
     private $latitudeMax;
     private $longitudeMin;
-    private $longitudeMax;
-    private $objects = array();
-    private $imageMap = array();
-    private $radius = 4;
+    private $longitudeMax; 
+    private $imageMap = [];
+    
+    public function mapalreadyexists(){
+        return $this->fileexists;
+    }
 
     /**
     * constructor
@@ -22,27 +24,43 @@ class GeoMap extends map {
     * @param   int    $y  image-height
     * @return  void
     */
-    public function __construct($loc_id, $breite=810, $loc_idadm1 = null) {
+    public function __construct($loc_id = null, $breite=810) {
+        if  (ctype_digit(strval($loc_id))){
+            $this->loc_id = $loc_id;
+            if (!\Storage::exists(\Config::get('opengeodb.storagemap')."/" .$loc_id . ".png")){
+                \Storage::makeDirectory(\Config::get('opengeodb.storagemap'));
+                $this->createMapAfterLoc_id($loc_id, $breite);
+            } else {
+                $this->fileexists = true;
+                $this->loadMapJson();
+            }  
+        } else if (is_string($loc_id)){
+            if (\Storage::exists($loc_id)) {
+                parent::__construct($loc_id);
+                $this->fileexists = true;
+            }
+        }
+    }
+    
+    public function createMapAfterLoc_id($loc_id, $breite=810){
         $this->loc_id = $loc_id;
-        $geo = (new GeodbMaster())->searchByLoc_id($loc_id)->first();
-        if ($geo->level() == 3 && empty($loc_idadm1)){
-            $loc_id = $geo->parentloc_id();
+        $oldgeo = new GeodbMaster();
+        $geo = $oldgeo->searchByLoc_id($loc_id)->first();
+        if ($geo->level() == 3){
+            $loc_idadm0 = $geo->parentloc_id();
             $loc_idadm1 = $geo->loc_id;
+        } else {
+            $loc_idadm0 = $geo->loc_id;
         }
         
         $faktor = $breite / ($geo->GeodbMapcoord()->tolat - $geo->GeodbMapcoord()->fromlat)/ 0.75;
         $laenge = ($geo->GeodbMapcoord()->tolon - $geo->GeodbMapcoord()->fromlon) * $faktor;
         
         parent::__construct($breite, $laenge);
-        $mapcolors = \Config::get('opengeodb.mapcolor');
-        foreach($mapcolors as $key => $color){
-            $this->colors[$key] = $this->color($color[0], $color[1], $color[2]);
-
-        } 
         $this->setRange($geo->GeodbMapcoord()->fromlat, $geo->GeodbMapcoord()->tolat, $geo->GeodbMapcoord()->fromlon, $geo->GeodbMapcoord()->tolon);
-        $this->addDataFile("/" .(!empty($loc_idadm1)?$loc_id."-".$loc_idadm1:"105-"."kreise") .".e00", "kreis");
-        $this->addDataFile("/$loc_id-bund.e00", "bund");
-        $this->addDataFile("/$loc_id.e00", "land");
+        $this->addDataFile("/" .(!empty($loc_idadm1)?$loc_idadm0."-".$loc_idadm1:$loc_idadm0."-kreise") .".e00", "kreis");
+        $this->addDataFile("/$loc_idadm0-bund.e00", "bund");
+        $this->addDataFile("/$loc_idadm0.e00", "land");
     }
 
     /**
@@ -116,12 +134,7 @@ class GeoMap extends map {
             $this->_setRangeByGeoObject($geoObject);
         }
 
-        $this->setRange(
-            $this->longitudeMin - $border,
-            $this->longitudeMax + $border,
-            $this->latitudeMin - $border,
-            $this->latitudeMax + $border
-        );
+        $this->setRange($this->longitudeMin - $border, $this->longitudeMax + $border, $this->latitudeMin - $border, $this->latitudeMax + $border);
     }
 
     /**
@@ -134,14 +147,8 @@ class GeoMap extends map {
     * @see     setRange(),setRangeByGeoObjects()
     */
     public function setRangeByGeoObject($geoObject,$border=0.1) {
-            $this->_setRangeByGeoObject($geoObject);
-
-        $this->setRange(
-            $this->longitudeMin - $border,
-            $this->longitudeMax + $border,
-            $this->latitudeMin - $border,
-            $this->latitudeMax + $border
-        );
+        $this->_setRangeByGeoObject($geoObject);
+        $this->setRange($this->longitudeMin - $border, $this->longitudeMax + $border, $this->latitudeMin - $border, $this->latitudeMax + $border);
     }
     
     private function _setRangeByGeoObject($geoObject,$border=0.1) {
@@ -154,7 +161,7 @@ class GeoMap extends map {
         if (!$this->latitudeMax || ($geoObject->lat > $this->latitudeMax)) 
             $this->latitudeMax = $geoObject->lat;  
     }
-
+    
     /**
     * Adds a GeoObject to the map
     *
@@ -165,30 +172,20 @@ class GeoMap extends map {
     * @return  void
     * @see     addGeoObjects()
     */
-    function addGeoObject($geoObject, $zwei, $art, $color='black', $radius=0) {
-        $x = round($this->scale($geoObject->laenge, 'x'));
-        $y = round($this->scale($geoObject->breite, 'y'));
+    function addGeoObject($lon, $lat, $id, $object, $color="black", $radius=null) {
+        $x = round($this->scale($lon, 'x'));
+        $y = round($this->scale($lat, 'y'));
         if (($x > $this->size_x) || ($y > $this->size_y)) return false;
-        $hasDrawn = false;
-        if (function_exists("imagefilledellipse")) {
-            $hasDrawn = imagefilledellipse($this->img, $x, $y, ($radius*2), ($radius*2), $this->colors[$color]);
-        }
-        if (!$hasDrawn) {
-            for($i=1;$i<=$radius;$i++) {
-                ImageArc($this->img, $x, $y, $i, $i, 0, 360, $this->colors[$color]);
-            }
-        }
-        $this->imageMap[] = array(
-            "name"  => ($zwei->stadt?$zwei->stadt . "/":"").$zwei->name,
-            "x"     => $x,
-            "y"     => $y,
-            "r"     => $radius?$radius:$this->radius,
-            "o"     => $geoObject,
+        if (empty($radius)) $radius = current(\Config::get('opengeodb.radiusdata'));
+        imagefilledellipse($this->img, $x, $y, $radius, $radius, $this->colors[$color]);
+        $this->imageMap[] = [
+            "objects"     => [$id => $object],
+            "x"     => round($x),
+            "y"     => round($y),
+            "r"     => $radius,
             "count" =>  1,
             "color" => $color,
-            "art"   => $art,
-            "id"    => $zwei->id
-        );
+        ];
     }
 
     /**
@@ -200,37 +197,33 @@ class GeoMap extends map {
     * @param   array   $radii different sizes for different count of GeoObjects at one spot
     * @return  void
     */
-    public function addGeoObjectIncrease($geoObject, $zwei ,$art, $color='black', $radii=array(1=>1, 2=>3, 3=>5, 4=>6, 1000=>4)) {
-        $x = round($this->scale($geoObject->laenge, 'x'));
-        $y = round($this->scale($geoObject->breite, 'y'));
-        $radii=array(1=>2, 2=>3, 3=>4, 4=>5, 5=>6, 6=>4);
-        $tolerance = end($radii);
+    public function addGeoObjectIncrease($lon, $lat, $id, $object, $color="black", $radiusarray=[]) {
+        $x = round($this->scale($lon, 'x'));
+        $y = round($this->scale($lat, 'y'));
+        if ($x < 0 || $y < 0) return ;
         $wasFound = false;
         for ($imc = 0; $imc<count($this->imageMap); $imc++) {
-            if (($this->imageMap[$imc]['x'] <= ($x + $tolerance))&& ($this->imageMap[$imc]['x'] >= ($x - $tolerance)) && ($this->imageMap[$imc]['y'] <= ($y + $tolerance)) && ($this->imageMap[$imc]['y'] >= ($y - $tolerance))) {
-                if (strpos($this->imageMap[$imc]['name'], $zwei->name) === false) {
-                    $this->imageMap[$imc]['name'] .= ",$zwei[stadt]/$zwei[name]";
-                    $this->imageMap[$imc]['id'] .= ".$zwei[id]";
-                    $this->imageMap[$imc]['art'] .= ".$art";
+            $wasFound = false;
+            if (count($radiusarray)> 0 && !isset($this->imageMap[$imc]["radius"])) 
+                $radiusarray=\Config::get('opengeodb.radiusdata');
+            elseif (isset($this->imageMap[$imc]["radius"]))
+                $radiusarray = $this->imageMap[$imc]["radius"];
+            else
+                $radiusarray = \Config::get('opengeodb.radiusdata');
+            $tolerance = end($radiusarray);
+            if (($this->imageMap[$imc]['x'] <= ($x + $tolerance)) && ($this->imageMap[$imc]['x'] >= ($x - $tolerance)) && ($this->imageMap[$imc]['y'] <= ($y + $tolerance)) && ($this->imageMap[$imc]['y'] >= ($y - $tolerance))) {
+                if (!empty(\Config::get('opengeodb.incresscolor')) && $this->imageMap[$imc]["color"] != $color) $color = \Config::get('opengeodb.incresscolor');
+                foreach($radiusarray as $k => $v){
+                    if (count($this->imageMap[$imc]['objects']) >= $k) $radius = $v;
                 }
-                $this->imageMap[$imc]['count']++;
-                if (isset($radii[$this->imageMap[$imc]['count']])) {
-                    $hasDrawn = false;
-                    if (function_exists("imagefilledellipse")) {
-                        $hasDrawn = imagefilledellipse($this->img, $this->imageMap[$imc]['x'], $this->imageMap[$imc]['y'], ($radii[$this->imageMap[$imc]['count']]*2), ($radii[$this->imageMap[$imc]['count']]*2),$this->colors[$this->imageMap[$imc]['color']]);
-                    }
-                    if (!$hasDrawn) {
-                        for($i=$this->imageMap[$imc]['r'];$i<=$radii[$this->imageMap[$imc]['count']];$i++) {
-                            imagearc($this->img, $this->imageMap[$imc]['x'], $this->imageMap[$imc]['y'], $i, $i, 0, 360, $this->color[$this->imageMap[$imc]['color']]);
-                        }
-                    }
-                    $this->imageMap[$imc]['r'] = $radii[$this->imageMap[$imc]['count']];
-                }
+                imagefilledellipse($this->img, $this->imageMap[$imc]['x'], $this->imageMap[$imc]['y'], $radius, $radius, $this->colors[$color]);
+                $this->imageMap[$imc]['objects'][$id] = $object;
+                $this->imageMap[$imc]['r'] = $radius;
                 $wasFound = true;
                 break;
             }
         }
-        if (!$wasFound) $this->addGeoObject($geoObject, $zwei , $color, $radii[1]);
+        if (!$wasFound) $this->addGeoObject($lon, $lat, $id, $object, $color);
     }
 
     /**
@@ -242,48 +235,74 @@ class GeoMap extends map {
     * @return  void
     * @see     addGeoObject()
     */
-    public function addGeoObjects(&$geoObjects,$color='black') {
+    public function addGeoObjectsIncrease($geoObjects) {
         foreach($geoObjects AS $geoObject) {
-            $this->addGeoObject($geoObject,$color);
+            $this->addGeoObjectIncrease($geoObject->lon, $geoObject->lat, $geoObject, $geoObject->color);
+        }
+    }
+    
+    /**
+    * Adds GeoObjects to the map
+    *
+    * @access  public
+    * @param   array   &$geoObjects  Array of GeoObjects
+    * @param   string  $color
+    * @return  void
+    * @see     addGeoObject()
+    */
+    public function addGeoObjects($geoObjects) {
+        foreach($geoObjects AS $geoObject) {
+            $this->addGeoObject($geoObject->lon, $geoObject->lat, $geoObject, $geoObject->color);
         }
     }
 
     /**
     * Saves the image
     *
-    * container for API compatibility with PEAR::Image_GIS
-    *
     * @access  public
     * @param   string  $file
     * @return  void
     * @see     map::dump()
     */
-    function saveImage($file = null) {
+    public function saveImage($file = null) {
         if (empty($file))
-            $this->dump(\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".png");
+            $this->dump(storage_path("app" .\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".png"));
         else
             $this->dump($file);
     }
     
-    function getImagePath() {
+    public function getImagePath() {
         return \Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".png";
     }
     
     /**
-    * Saves the image
-    *
-    * container for API compatibility with PEAR::Image_GIS
+    * Saves the Imagemap as JSON
     *
     * @access  public
     * @param   string  $file
     * @return  void
     * @see     map::dump()
     */
-    function saveMapJson($file = null) {
+    public function saveMapJson($file = null) {
         if (empty($file))
-            \Storage::put(\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".json", json_encode($this->imageMap));
+            \Storage::put(\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".json", serialize($this->imageMap));
         else
-            \Storage::put($file, json_encode($this->imageMap));
+            \Storage::put($file, serialize($this->imageMap));
+    }
+    
+    /**
+    * Saves the Imagemap as JSON
+    *
+    * @access  public
+    * @param   string  $file
+    * @return  void
+    * @see     map::dump()
+    */
+    private function loadMapJson($file = null) {
+        if (empty($file))
+            $this->imageMap = unserialize(\Storage::get(\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".json"));
+        else
+            $this->imageMap = unserialize(\Storage::get($file));
     }
         
     /**

@@ -7,6 +7,7 @@ class GeodbMaster {
     private $textdata;
     private $_GeodbTextdata; 
     private $_GeodbMapcoord; 
+    private $_ParentGeodbMaster; 
     private $_GeodbCoordinate; 
     
     public function __construct($loc_id = null){
@@ -74,26 +75,36 @@ class GeodbMaster {
     public function GeodbTextdata(){
         if (empty($this->_GeodbTextdata))
             $this->_GeodbTextdata = GeodbTextdata::where("loc_id", $this->loc_id)->get();
-        return  $this->_GeodbTextdata;
+        return $this->_GeodbTextdata;
+    }
+        
+    public function ParentGeodbMaster(){
+        if (empty($this->_ParentGeodbMaster))
+            $this->_ParentGeodbMaster = new GeodbMaster($this->parentloc_id());
+        return $this->_ParentGeodbMaster;
+    }
+    
+    public function getTextVal($texttype){
+        foreach($this->GeodbTextdata() as $value){
+            if ($value->text_type == $texttype)
+                return $value->text_val;
+        }
+        return "";
     }
     
     public function name(){
-        if (!isset($this->GeodbTextdata()->where("text_type", "500100000")->first()->text_val))
-            return "";
-        return $this->GeodbTextdata()->where("text_type", "500100000")->first()->text_val;
+        return $this->getTextVal("500100000");
     }
     
     public function kurz(){  
-        return $this->GeodbTextdata()->where("text_type", "500500000")->first()->text_val;
+        return $this->getTextVal("500500000");
     }
     
     public function level(){  
-        if (!isset($this->GeodbTextdata()->where("text_type", "400200000")->first()->text_val))
-            return "";
-        return $this->GeodbTextdata()->where("text_type", "400200000")->first()->text_val;
+        return $this->getTextVal("400200000");
     }
     
     public function parentloc_id(){  
-        return $this->GeodbTextdata()->where("text_type", "400100000")->first()->text_val;
+        return $this->getTextVal("400100000");
     }
 }
