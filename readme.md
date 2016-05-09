@@ -178,15 +178,15 @@ class MapController extends Controller
     
 }
 ```
-Mein aktueller weg um die Ladezeiten gering zu halten. Dies ist alles in der map.blade.php:
-1. Um nur die Karte von Deutschland anzuzeigen kann einfach /Karte/show/105 (250px) aufgerufen werden.
-    - &lt;img src="{{URL::Asset('/karte/show/' . $demaps[$x]->loc_id)}}" alt="Karte {{$demaps[$x]->GeodbMaster()->name()}}">
-    - Bitte in eine for-schleife setzen oder das $x mit einer zahl ersetzen.
+Dies ist mein aktueller weg um die Ladezeiten gering zu halten. Die Punkte sind in der map.blade.php:  
+1. Um nur die Karte von Deutschland anzuzeigen kann einfach /Karte/show/105 (250px) aufgerufen werden.  
+    - &lt;img src="{{URL::Asset('/karte/show/' . $demaps[$x]->loc_id)}}" alt="Karte {{$demaps[$x]->GeodbMaster()->name()}}">  
+    - Bitte in eine for-schleife setzen oder das $x mit einer zahl ersetzen.  
 2. In der Funktion /Karte/showbig/105 (1090px) werden noch die Punkte hinzugezeichnet.  
-    - &lt;img src="{{URL::Asset('/karte/showbig/' . $demaps[$x]->loc_id)}}" alt="Karte {{$demaps[$x]->GeodbMaster()->name()}}" usemap="#map-{{$demaps[$x]->loc_id}}">
-    - Bitte in eine for-schleife setzen oder das $x mit einer Zahl ersetzen.
+    - &lt;img src="{{URL::Asset('/karte/showbig/' . $demaps[$x]->loc_id)}}" alt="Karte {{$demaps[$x]->GeodbMaster()->name()}}" usemap="#map-{{$demaps[$x]->loc_id}}">  
+    - Bitte in eine for-schleife setzen oder das $x mit einer Zahl ersetzen.  
 3. In der Funktion /Karte/json/105 gebe ich noch die einzelnen Punkte als JSON zurück.   
-    - &lt;map name="map-{{$demaps[$x]->loc_id}}" id="map-{{$demaps[$x]->loc_id}}">
+    - &lt;map name="map-{{$demaps[$x]->loc_id}}" id="map-{{$demaps[$x]->loc_id}}">  
 ```
 function gethtmlmap(id){
     $.ajax({
@@ -202,8 +202,8 @@ function gethtmlmap(id){
     });
 }
 ```
-    - Einfach als Javascript gethtmlmap($demaps[$x]->loc_id) aufrufen um an das JSON für die Karte zu kommen.
-    - UIkit.notify(....); setzt ein kleines notify am Kopf der Seite ab. (benötigt uikit)
+    - Einfach als Javascript gethtmlmap($demaps[$x]->loc_id) aufrufen um an das JSON für die Karte zu kommen.  
+    - UIkit.notify(....); setzt ein kleines notify am Kopf der Seite ab. (benötigt uikit)  
     
 
 ### Daten abholen/Entfernung berechnen
@@ -222,6 +222,5 @@ $distanz = $augsburg->GeodbCoordinate()->calculatedistance($munich->GeodbCoordin
 ```
 
 ## Sonstiges
-Um das ganze Skript in aktion zu erleben schaut es euch an:  
-[![Thermen-Portal](http://www.thermen-portal.com/images/navbarlogo.png)](http://www.thermen-portal.com)
+Um das ganze Skript in Aktion zu erleben besucht einfach [![Thermen-Portal](http://www.thermen-portal.com/images/navbarlogo.png)](http://www.thermen-portal.com)
 
