@@ -13,6 +13,7 @@
             "Equi\\Opengeodb\\": "src/"
         }
     },
+    "version": "1.0",
     "minimum-stability": "stable",
     "license": "CC-BY-ND-3.0",
     "require": {
