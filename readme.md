@@ -57,7 +57,7 @@ Extra.sql    // &Uuml;bergeordnete inhalte (Europa, Amerika, ...) und dazugeh&ou
 
 Die Dateien scheinen veraltet diese werden aber in changes.sql aktualisiert  
 
-### Konfiguration opengeodb.php
+### Konfiguration config/opengeodb.php
 
 ```
 return [
@@ -81,14 +81,11 @@ return [
         'bund'=>[125, 125, 125], 
         'kreis'=>[200, 200, 200], 
     ],
-    
+    // Anzahl => radisgr&ouml;&szlig;e
     'radiusdata' => [
-        1 => 2,
-        2 => 3,
-        3 => 4,
-        4 => 5,
-        5 => 6,
-        6 => 4
+        1 => 7,
+        2 => 10,
+        5 => 14,
     ]
     
 ];
@@ -98,9 +95,133 @@ return [
 ```
 php artisan migrate --seed
 ```
+Für manche PHP Konfiguration ist die de.sql zu groß hierfür könnt ihr folgendes versuchen:
+```
+php -d memory_limit=256M artisan migrate --seed
+```
 
 ## Einbinden/Benutzen
 
+### Karte zeichnen
+Das Beispiel zeigt ein Controller der in der routes.php auf /Karte/ reagiert.  
+```
+namespace App\Http\Controllers;
 
-## Zusätzliche Daten
+use App\Http\Requests;
+use Illuminate\Http\Request;
+use App\Helpers\Controller;
+use App\Models\Thermal;
+use Equi\Opengeodb\Map\GeoMap;
+use Equi\Opengeodb\Models\GeodbMapcoord; 
+use Equi\Opengeodb\Models\GeodbTextdata;
+
+class MapController extends Controller
+{
+
+    /**
+    * Show the application dashboard.
+    *
+    * @return \Illuminate\Http\Response
+    */
+    public function getIndex() { 
+        $this->_data["demaps"] = GeodbTextdata::where("loc_id", "105")->first()->GeodbMapcoords();
+        $this->_data["atmaps"][] = GeodbMapcoord::where("loc_id", "106")->first();
+        $this->_data["chmaps"][] = GeodbMapcoord::where("loc_id", "107")->first();
+        $this->_data["title"] = "Liste aller verf&uuml;gbaren Karten";
+        return view('maps/map', $this->_data);
+    }
+
+    public function getShow($loc_id){
+        return $this->zeichnethumb($loc_id);
+    }
+
+    public function getShowbig($loc_id){
+        $map = $this->zeichne($loc_id);
+        return \Response::make(\Storage::get($map->getImagePath()))->header('Content-Type', 'image/png');
+    }
+    
+    public function getJson($loc_id){
+        $map = $this->zeichne($loc_id);
+        $data = $map->getArrayMapdata();
+        for($i=0;$i < count($data); $i++){
+            $datalinks = "";
+            foreach($data[$i]["objects"] as $object){
+                $datalinks .= "<a href='" . \URL::asset("/thermen/show/" . $object->id) . "' >" . $object->name . " (" . $object->stadt . ")</a><br>";
+            }
+            $data[$i]["objects"] = $datalinks;
+        }
+        return \Response::json(["data" => $data, "id" => $loc_id])->header('Content-Type', 'json');
+    }
+
+    private function zeichne($loc_id){
+        $map = new GeoMap($loc_id, 1090);
+        if (!$map->mapalreadyexists()) {
+            $thermen = Thermal::all();
+            foreach($thermen as $therme){
+                $map->addGeoObjectIncrease($therme->lon, $therme->lat, $therme->id, $therme, $therme->artbad); 
+            }
+            $map->saveMapJson();
+            $map->saveImage();
+        }
+        return $map;
+    }
+    
+    private function zeichnethumb($loc_id){
+        $image = \Config::get('opengeodb.storagemap')."/thumb" . $loc_id . ".png";
+        if (!\Storage::exists($image)) {
+            $map = new GeoMap();
+            $map->createMapAfterLoc_id($loc_id, 250);
+            $map->saveImage(storage_path("app".\Config::get('opengeodb.storagemap')."/thumb" . $loc_id . ".png" ));
+        }
+        return \Response::make(\Storage::get($image))->header('Content-Type', 'image/png');
+    }
+    
+}
+```
+Mein aktueller weg um die Ladezeiten gering zu halten. Dies ist alles in der map.blade.php:
+1. Um nur die Karte von Deutschland anzuzeigen kann einfach /Karte/show/105 (250px) aufgerufen werden.
+    - &lt;img src="{{URL::Asset('/karte/show/' . $demaps[$x]->loc_id)}}" alt="Karte {{$demaps[$x]->GeodbMaster()->name()}}">
+    - Bitte in eine for-schleife setzen oder das $x mit einer zahl ersetzen.
+2. In der Funktion /Karte/showbig/105 (1090px) werden noch die Punkte hinzugezeichnet.  
+    - &lt;img src="{{URL::Asset('/karte/showbig/' . $demaps[$x]->loc_id)}}" alt="Karte {{$demaps[$x]->GeodbMaster()->name()}}" usemap="#map-{{$demaps[$x]->loc_id}}">
+    - Bitte in eine for-schleife setzen oder das $x mit einer Zahl ersetzen.
+3. In der Funktion /Karte/json/105 gebe ich noch die einzelnen Punkte als JSON zurück.   
+    - &lt;map name="map-{{$demaps[$x]->loc_id}}" id="map-{{$demaps[$x]->loc_id}}">
+    - ```
+function gethtmlmap(id){
+    $.ajax({
+        url: "{{URL::asset("/karte/json")}}/" + id,
+    }).done(function(data) {
+        $("#map-" . id).html(""); 
+        for(i=0; i < data.data.length; i++){
+            area = $("#map-" + data.id).append("<area shape='circle' href='#' coords='" + data.data[i].x + "," + data.data[i].y + "," + (data.data[i].r + 10) + "' id='area" + data.data[i].x + data.data[i].y + data.data[i].r + "' data-id='" + i + "'>");
+            $("#area" + data.data[i].x + data.data[i].y + data.data[i].r).mouseover(function (){
+                UIkit.notify(data.data[$(this).data("id")].objects, {status:'info'});
+            }); 
+        }
+    });
+}
+```
+    - Einfach als Javascript gethtmlmap($demaps[$x]->loc_id) aufrufen um an das JSON für die Karte zu kommen.
+    - UIkit.notify(....); setzt ein kleines notify am Kopf der Seite ab. (benötigt uikit)
+    
+
+### Daten abholen/Entfernung berechnen
+Weg 1:
+```
+$geoloc = GeodbCoordinate::where("loc_id", $geotext->loc_id)->first();
+$entrys = Location::select(\DB::raw("*, round(IFNULL((ACOS((SIN(RADIANS(" . $geoloc->lat ."))*SIN(RADIANS(lat))) + (COS(RADIANS(" . $geoloc->lat ."))*COS(RADIANS(lat))*COS(RADIANS(lon)-RADIANS(" . $geoloc->lon .")))) * 6371.110 ),0),2) AS distance"))->get();
+```
+Das Model Location hat die felder lat und lon gefüllt um nicht immer 100 MB an Daten zu durchsuchen.
+
+Weg 2:
+```
+$augsburg = (new GeodbMaster())->searchByName("augsburg")->first();
+$munich = (new GeodbMaster())->searchByPLZ(81929)->first();
+$distanz = $augsburg->GeodbCoordinate()->calculatedistance($munich->GeodbCoordinate()->lon, $munich->GeodbCoordinate()->lat);
+```
+
+## Sonstiges
+Um das ganze Skript in aktion zu erleben schaut es euch an:  
+[![Thermen-Portal](http://www.thermen-portal.com/images/navbarlogo.png)](http://www.thermen-portal.com)
 

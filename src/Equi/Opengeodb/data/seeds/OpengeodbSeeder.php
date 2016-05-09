@@ -113,7 +113,7 @@ class OpengeodbSeeder extends Seeder
         $output = new ConsoleOutput(); 
         $sql = Illuminate\Support\Facades\Storage::get(Config::get('opengeodb.storageopengodbsql'). "/" .$filename);
         
-        $statements = array_map('trim', explode("\n", $sql));
+        $statements = explode("\n", $sql);
         $lines = count($statements);
         $output->writeln('Starte Datei:' . $filename. " Zeilen: ". $lines);
         DB::beginTransaction();
