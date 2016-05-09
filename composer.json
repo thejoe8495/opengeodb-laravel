@@ -8,7 +8,6 @@
             "email": "opensource@equivalents.de"
         }
     ],
-    "version": "1.0.0",
     "autoload": {
         "psr-4": {
             "Equi\\Opengeodb\\": "src/"
