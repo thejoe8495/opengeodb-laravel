@@ -8,17 +8,17 @@
 ## Installieren
 ### Composer /Artisan
 ```
-composer require equi/opengeodb-laravel:
+composer require equi/opengeodb-laravel
 ```
 
-oder in die composer.json die Zeile "equi/opengeodb-laravel": "~6.0", hinzufügen  
+oder in die composer.json die Zeile "equi/opengeodb-laravel": "1.*", hinzufügen  
 ```
 ...
 "require": {
         "php": ">=5.5.9",
         "laravel/framework": "5.2.*",
         ....
-        "equi/opengeodb-laravel": "~6.0",
+        "equi/opengeodb-laravel": "1.*",
         ...
     },
     ...
@@ -187,7 +187,7 @@ Mein aktueller weg um die Ladezeiten gering zu halten. Dies ist alles in der map
     - Bitte in eine for-schleife setzen oder das $x mit einer Zahl ersetzen.
 3. In der Funktion /Karte/json/105 gebe ich noch die einzelnen Punkte als JSON zurück.   
     - &lt;map name="map-{{$demaps[$x]->loc_id}}" id="map-{{$demaps[$x]->loc_id}}">
-    - ```
+```
 function gethtmlmap(id){
     $.ajax({
         url: "{{URL::asset("/karte/json")}}/" + id,

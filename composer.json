@@ -1,5 +1,5 @@
 {
-    "name": "equi/opengeodb",
+    "name": "equi/opengeodb-laravel",
     "description": "Package for the OpengeoDB",
     "authors": [
         {
@@ -7,6 +7,7 @@
             "email": "opensource@equivalents.de"
         }
     ],
+    "version": "1.0.0",
     "minimum-stability": "dev",
     "require": {}
 }
