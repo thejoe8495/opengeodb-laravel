@@ -1,6 +1,7 @@
 {
     "name": "equi/opengeodb-laravel",
     "description": "Package for the OpengeoDB",
+    "keywords" : ["laravel5","laravel","opengeodb"],
     "authors": [
         {
             "name": "Joerg Stemmer",
@@ -8,6 +9,13 @@
         }
     ],
     "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Equi\\Opengeodb\\": "src/"
+        }
+    },
     "minimum-stability": "stable",
-    "require": {}
+    "require": {
+        "php": ">=5.5.9"
+    },
 }
