@@ -25,14 +25,14 @@ class GeodbMaster {
     
     public function searchByName($name){
         $this->textdata->orWhere(function ($query) use($name){
-            $query->where("text_type", "500100000")->where("text_val", $name);
+            $query->where("text_type", "500100000")->where("text_val", "like", $name . "%");
         });
         return $this;
     }
     
     public function searchByKurz($kurz){
         $this->textdata->orWhere(function ($query) use($kurz){
-            $query->where("text_type", "500500000")->where("text_val", $kurz);
+            $query->where("text_type", "500500000")->where("text_val", "like", $kurz . "%");
         });
         return $this;
     }
@@ -52,12 +52,15 @@ class GeodbMaster {
     }
 
     public function get(){
-        $this->textdata->get();
-        $Geomasters = [];
-        foreach($this->textdata->unique('loc_id') as $locs){
-            $Geomasters[] = new GeodbMaster($locs->loc_id);
+        $this->textdata = $this->textdata->limit(20)->get();
+        if (!empty($this->textdata)){
+            $Geomasters = [];
+            foreach($this->textdata->unique('loc_id') as $locs){
+                $Geomasters[] = new GeodbMaster($locs->loc_id);
+            }
+            return collect($Geomasters); 
         }
-        return collect($Geomasters);
+        return collect();
     }
     
     public function GeodbMapcoord(){ 
@@ -98,6 +101,10 @@ class GeodbMaster {
     
     public function kurz(){  
         return $this->getTextVal("500500000");
+    }
+    
+    public function plz(){  
+        return $this->getTextVal("500300000");
     }
     
     public function level(){  

@@ -1,6 +1,7 @@
 <?php
 namespace Equi\Opengeodb\Map;
 use Equi\Opengeodb\Models\GeodbMaster;
+use Equi\Opengeodb\Models\GeodbMapcoord;
 
 class GeoMap extends map {
 
@@ -42,6 +43,16 @@ class GeoMap extends map {
         }
     }
     
+    public function createEmptyMapAfterLoc_id($loc_id, $breite=810){
+        $this->loc_id = $loc_id;    
+        $mapcoord = GeodbMapcoord::where("loc_id", $loc_id)->first();
+        $faktor = $breite / ($mapcoord->tolat - $mapcoord->fromlat)/ 0.75;
+        $laenge = ($mapcoord->tolon - $mapcoord->fromlon) * $faktor;
+        
+        parent::__construct($breite, $laenge);
+        $this->setRange($mapcoord->fromlat, $mapcoord->tolat, $mapcoord->fromlon, $mapcoord->tolon);
+    }
+    
     public function createMapAfterLoc_id($loc_id, $breite=810){
         $this->loc_id = $loc_id;
         $oldgeo = new GeodbMaster();
@@ -58,7 +69,7 @@ class GeoMap extends map {
         
         parent::__construct($breite, $laenge);
         $this->setRange($geo->GeodbMapcoord()->fromlat, $geo->GeodbMapcoord()->tolat, $geo->GeodbMapcoord()->fromlon, $geo->GeodbMapcoord()->tolon);
-        $this->addDataFile("/" .(!empty($loc_idadm1)?$loc_idadm0."-".$loc_idadm1:$loc_idadm0."-kreise") .".e00", "kreis");
+        $this->addDataFile("/" .(isset($loc_idadm1)?$loc_idadm0."-".$loc_idadm1:$loc_idadm0."-kreise") .".e00", "kreis");
         $this->addDataFile("/$loc_idadm0-bund.e00", "bund");
         $this->addDataFile("/$loc_idadm0.e00", "land");
     }
@@ -448,10 +459,11 @@ class GeoMap extends map {
         }
     }
 
-    function adde00File($data, $col) {
+    private function adde00File($data, $col) {
         $num_records = 0;
         $ln = 0;
-        $filedata = explode("\n", \Storage::get(\Config::get('opengeodb.storagee00') . $data));
+        $rawfile = \Storage::get(\Config::get('opengeodb.storagee00') . $data);
+        $filedata = explode("\n", $rawfile);
         foreach($filedata as $line){ 
             $ln ++;   
             # a node definition
