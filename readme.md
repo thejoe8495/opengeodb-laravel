@@ -11,14 +11,14 @@
 composer require equi/opengeodb-laravel
 ```
 
-oder in die composer.json die Zeile "equi/opengeodb-laravel": "1.*", hinzufügen  
+oder in die composer.json die Zeile "equi/opengeodb-laravel": "~1.0", hinzufügen  
 ```
 ...
 "require": {
         "php": ">=5.5.9",
         "laravel/framework": "5.2.*",
         ....
-        "equi/opengeodb-laravel": "1.*",
+        "equi/opengeodb-laravel": "~1.0",
         ...
     },
     ...
@@ -109,7 +109,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests;
 use Illuminate\Http\Request;
-use App\Helpers\Controller;
 use App\Models\Thermal;
 use Equi\Opengeodb\Map\GeoMap;
 use Equi\Opengeodb\Models\GeodbMapcoord; 
@@ -118,26 +117,20 @@ use Equi\Opengeodb\Models\GeodbTextdata;
 class MapController extends Controller
 {
 
-    /**
-    * Show the application dashboard.
-    *
-    * @return \Illuminate\Http\Response
-    */
-    public function getIndex() { 
+    public function getIndex() {
+        $this->_data["result"] = "";
+        $this->_data["ready"] = ""; 
+        $this->_data["js"] = ""; 
         $this->_data["demaps"] = GeodbTextdata::where("loc_id", "105")->first()->GeodbMapcoords();
         $this->_data["atmaps"][] = GeodbMapcoord::where("loc_id", "106")->first();
         $this->_data["chmaps"][] = GeodbMapcoord::where("loc_id", "107")->first();
-        $this->_data["title"] = "Liste aller verf&uuml;gbaren Karten";
+        $this->_data["title"] = \Lang::get("map.titlemap");
+        $this->_data["description"] = \Lang::get("map.descriptionmap");
         return view('maps/map', $this->_data);
     }
 
     public function getShow($loc_id){
         return $this->zeichnethumb($loc_id);
-    }
-
-    public function getShowbig($loc_id){
-        $map = $this->zeichne($loc_id);
-        return \Response::make(\Storage::get($map->getImagePath()))->header('Content-Type', 'image/png');
     }
     
     public function getJson($loc_id){
@@ -146,15 +139,45 @@ class MapController extends Controller
         for($i=0;$i < count($data); $i++){
             $datalinks = "";
             foreach($data[$i]["objects"] as $object){
-                $datalinks .= "<a href='" . \URL::asset("/thermen/show/" . $object->id) . "' >" . $object->name . " (" . $object->stadt . ")</a><br>";
+                $datalinks .= "<a href='" .  \URL::route('seotherme', ["id" => $object->id, "badname" => $object->badurl]) . "' >" . $object->name . " (" . $object->stadt . ")</a><br>";
             }
             $data[$i]["objects"] = $datalinks;
         }
         return \Response::json(["data" => $data, "id" => $loc_id])->header('Content-Type', 'json');
     }
+    
+    public function getShowbig($loc_id){
+        $map = $this->zeichne($loc_id);
+        return \Response::make(\Storage::get($map->getImagePath()))->header('Content-Type', 'image/png');
+    }
+    
+    public function postSearchloc(Request $request){
+        $geo = new GeodbMaster();
+        $geo->searchByName($request->get("search"));
+        $geo->searchByPLZ($request->get("search"));
+        $geodat = $geo->get();
+        $json = [];
+        foreach($geodat as $onecit){
+            $city["loc_id"] = $onecit->loc_id;
+            $city["name"] = $onecit->name();
+            $city["plz"] = $onecit->plz();
+            $json[] = $city;
+        }
+        return $json;
+    } 
 
     private function zeichne($loc_id){
-        $map = new GeoMap($loc_id, 1090);
+        if ($loc_id != 104)
+            $map = new GeoMap($loc_id, 1090);
+        else{
+            $map = new GeoMap();
+            $map->createEmptyMapAfterLoc_id($loc_id, 1090);
+            $map->addDataFile("/105-bund.e00", "bund");
+            $map->addDataFile("/105.e00", "land");
+            $map->addDataFile("/106.e00", "land");
+            $map->addDataFile("/107.e00", "land");
+        }
+        
         if (!$map->mapalreadyexists()) {
             $thermen = Thermal::all();
             foreach($thermen as $therme){
@@ -167,11 +190,20 @@ class MapController extends Controller
     }
     
     private function zeichnethumb($loc_id){
-        $image = \Config::get('opengeodb.storagemap')."/thumb" . $loc_id . ".png";
-        if (!\Storage::exists($image)) {
+        $image = \Config::get('opengeodb.storagemap')."thumb/" . $loc_id . ".png";
+        if(\Storage::exists($image)) {
+            return \Response::make(\Storage::get($image))->header('Content-Type', 'image/png');
+        }elseif ($loc_id == 104){
+            $map = new GeoMap();
+            $map->createEmptyMapAfterLoc_id($loc_id, 350);
+            $map->addDataFile("/105.e00", "land");
+            $map->addDataFile("/106.e00", "land");
+            $map->addDataFile("/107.e00", "land");
+            $map->saveImage(storage_path("app". $image ));
+        }else if (!\Storage::exists($image)) {
             $map = new GeoMap();
             $map->createMapAfterLoc_id($loc_id, 250);
-            $map->saveImage(storage_path("app".\Config::get('opengeodb.storagemap')."/thumb" . $loc_id . ".png" ));
+            $map->saveImage(storage_path("app". $image ));
         }
         return \Response::make(\Storage::get($image))->header('Content-Type', 'image/png');
     }

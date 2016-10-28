@@ -8,12 +8,15 @@
             "email": "opensource@equivalents.de"
         }
     ],
+    "require": {
+        "php": ">=5.5.9"
+    },
     "autoload": {
         "psr-4": {
             "Equi\\Opengeodb\\": "src/"
         }
     },
-    "version": "1.0",
+    "version": "1.0-stable",
     "minimum-stability": "stable",
     "license": "CC-BY-ND-3.0",
     "require": {
