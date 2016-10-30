@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Illuminate\Support\Facades\Storage;
 
 class OpengeodbSeeder extends Seeder
 {
@@ -12,23 +13,21 @@ class OpengeodbSeeder extends Seeder
      */
     public function run()
     {
-        $this->importfile("AT.sql");
-        $this->importfile("AThier.sql");
-        $this->importfile("BE.sql");
-        $this->importfile("BEhier.sql");
-        $this->importfile("LI.sql");
-        $this->importfile("LIhier.sql");
-        $this->importfile("CH.sql");
-        $this->importfile("CHhier.sql");
-        $this->importfile("DE.sql");
-        $this->importfile("DEhier.sql");
-        $this->importfile("opengeodb-end.sql");
-        $this->importfile("opengeodb_hier.sql");
-        $this->importfile("extra.sql");
+        $output = new ConsoleOutput(); 
+        $output->writeln('Starting');
+        $sqlfiles = ["AT.sql", "AThier.sql","BE.sql","BEhier.sql","LI.sql","LIhier.sql","CH.sql","CHhier.sql","DE.sql","DEhier.sql"];
+        foreach($sqlfiles as $filename){
+            if (Storage::exists(Config::get('opengeodb.storageopengodbsql'). "/" .$filename))  
+                $this->importfile($filename); 
+        } 
         DB::table('geodb_textdata')->where("date_type_until","0")->delete();
-        $this->importfile("changes.sql", true);
         
-        $output = new ConsoleOutput();
+        $sqlfiles = ["opengeodb-end.sql","opengeodb_hier.sql","extra.sql","changes.sql"];
+        foreach($sqlfiles as $filename){
+            if (Storage::exists(Config::get('opengeodb.storageopengodbsql'). "/" .$filename))  
+                $this->importfile($filename, true); 
+        }
+        
         $output->writeln('Creating Index');
         Schema::table('geodb_type_names', function ($table) {                      
             $table->index('type_id');
@@ -86,42 +85,49 @@ class OpengeodbSeeder extends Seeder
             $table->index('valid_since');
             $table->index('valid_until');
         });
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "105", "fromlat" => 5.5, "fromlon" => 47, "tolat" => 15.5, "tolon" => 55]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "108", "fromlat" => 11, "fromlon" => 51, "tolat" => 15, "tolon" => 53.5]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "110", "fromlat" => 7, "fromlon" => 47, "tolat" => 11, "tolon" => 50]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "111", "fromlat" => 8, "fromlon" => 47, "tolat" => 14.5, "tolon" => 51]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "113", "fromlat" => 7.5, "fromlon" => 49, "tolat" => 10.5, "tolon" => 52]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "115", "fromlat" => 10, "fromlon" => 53, "tolat" => 14.5, "tolon" => 55]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "116", "fromlat" => 5.5, "fromlon" => 51, "tolat" => 12, "tolon" => 55]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "117", "fromlat" => 5.5, "fromlon" => 50, "tolat" => 10, "tolon" => 53]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "118", "fromlat" => 5.5, "fromlon" => 48.5, "tolat" => 9, "tolon" => 51.5]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "119", "fromlat" => 7, "fromlon" => 53, "tolat" => 12, "tolon" => 55]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "120", "fromlat" => 5.5, "fromlon" => 49, "tolat" => 8, "tolon" => 50]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "121", "fromlat" => 11, "fromlon" => 50, "tolat" => 15.5, "tolon" => 52]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "122", "fromlat" => 10, "fromlon" => 50.5, "tolat" => 13.5, "tolon" => 53.5]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "123", "fromlat" => 9.5, "fromlon" => 50, "tolat" => 13, "tolon" => 52]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "106", "fromlat" => 9, "fromlon" => 46, "tolat" => 18, "tolon" => 50]);
-        DB::table('geodb_mapcoords')->insert(["loc_id" => "107", "fromlat" => 5, "fromlon" => 45.5, "tolat" => 11, "tolon" => 48]);
+        $this->insertmapcoords(["loc_id" => "105", "fromlat" => 5.5, "fromlon" => 47, "tolat" => 15.5, "tolon" => 55]);
+        $this->insertmapcoords(["loc_id" => "108", "fromlat" => 11, "fromlon" => 51, "tolat" => 15, "tolon" => 53.5]);
+        $this->insertmapcoords(["loc_id" => "110", "fromlat" => 7, "fromlon" => 47, "tolat" => 11, "tolon" => 50]);
+        $this->insertmapcoords(["loc_id" => "111", "fromlat" => 8, "fromlon" => 47, "tolat" => 14.5, "tolon" => 51]);
+        $this->insertmapcoords(["loc_id" => "113", "fromlat" => 7.5, "fromlon" => 49, "tolat" => 10.5, "tolon" => 52]);
+        $this->insertmapcoords(["loc_id" => "115", "fromlat" => 10, "fromlon" => 53, "tolat" => 14.5, "tolon" => 55]);
+        $this->insertmapcoords(["loc_id" => "116", "fromlat" => 5.5, "fromlon" => 51, "tolat" => 12, "tolon" => 55]);
+        $this->insertmapcoords(["loc_id" => "117", "fromlat" => 5.5, "fromlon" => 50, "tolat" => 10, "tolon" => 53]);
+        $this->insertmapcoords(["loc_id" => "118", "fromlat" => 5.5, "fromlon" => 48.5, "tolat" => 9, "tolon" => 51.5]);
+        $this->insertmapcoords(["loc_id" => "119", "fromlat" => 7, "fromlon" => 53, "tolat" => 12, "tolon" => 55]);
+        $this->insertmapcoords(["loc_id" => "120", "fromlat" => 5.5, "fromlon" => 49, "tolat" => 8, "tolon" => 50]);
+        $this->insertmapcoords(["loc_id" => "121", "fromlat" => 11, "fromlon" => 50, "tolat" => 15.5, "tolon" => 52]);
+        $this->insertmapcoords(["loc_id" => "122", "fromlat" => 10, "fromlon" => 50.5, "tolat" => 13.5, "tolon" => 53.5]);
+        $this->insertmapcoords(["loc_id" => "123", "fromlat" => 9.5, "fromlon" => 50, "tolat" => 13, "tolon" => 52]);
+        $this->insertmapcoords(["loc_id" => "106", "fromlat" => 9, "fromlon" => 46, "tolat" => 18, "tolon" => 50]);
+        $this->insertmapcoords(["loc_id" => "107", "fromlat" => 5, "fromlon" => 45.5, "tolat" => 11, "tolon" => 48]);
         Schema::table('geodb_mapcoords', function ($table) {                      
             $table->index('loc_id');
         });
     }
     
+    public function insertmapcoords($fields){
+        try{
+            DB::table('geodb_mapcoords')->insert($fields);
+        } catch (\Exception $ex){
+        }
+    }
+    
     public function importfile($filename, $ignoreerror = false){
-        if (!Illuminate\Support\Facades\Storage::exists(Config::get('opengeodb.storageopengodbsql')."/" .$filename))
-            return;
         $output = new ConsoleOutput(); 
-        $sql = Illuminate\Support\Facades\Storage::get(Config::get('opengeodb.storageopengodbsql'). "/" .$filename);
+        $sql = Storage::get(Config::get('opengeodb.storageopengodbsql'). "/" .$filename);
         
         $statements = explode("\n", $sql);
+        $output->writeln('Starte Datei:' . Config::get('opengeodb.storageopengodbsql'). "/" .$filename . " Zeilen: ");
         $lines = count($statements);
         $output->writeln('Starte Datei:' . $filename. " Zeilen: ". $lines);
         DB::beginTransaction();
         for($i=0; $i<$lines; $i++)
-        {
-            //if (is_int($i/ 1000)) $output->writeln(date("H:i:s") .': Run '.$i.' of ' .$lines);
+        { 
             $line = preg_replace('!/\*.*?\*/!s', '', $statements[$i]);
+            //$output->writeln('Zeile:' . $line);
             if (!empty(str_replace("\r", "", $line)) && $line != "BEGIN;" && $line != "COMMIT;" && strpos($line, "create index") === false){
+                if (strpos($line,"geodb_floatdata")) $line = str_replace(",0,", ",null,", $line);
                 if ($ignoreerror){
                     try{
                         DB::statement($line);

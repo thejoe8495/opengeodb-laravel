@@ -5,15 +5,16 @@ return [
     'storagemap' => "/opengeodb/map",
     'storagee00' => "/opengeodb/e00",
     'storageopengodbsql' => "/opengeodb/sql",
-    
+        
     'mapcolor' => [
-        'white'=>[255, 255, 255], 
-        'red'=>[255, 0, 0], 
         'black'=>[0, 0, 0], 
-        'green'=>[178, 237, 90], 
-        'blue'=>[148, 208, 255], 
-        'grey'=>[148, 208, 255], 
-        'darkgrey'=>[148, 208, 255], 
+        'white'=>[255, 255, 255], 
+        'Therme'=>[255, 0, 0], 
+        'Freizeitbad'=>[178, 237, 90], 
+        'Sauna'=>[148, 208, 255], 
+        'Anderes Bad'=>[148, 208, 255], 
+        'Bad'=>[148, 208, 255], 
+        'Hallenbad'=>[148, 208, 255], 
         'yellow'=>[148, 208, 255], 
         'pink'=>[148, 208, 255],
          
@@ -22,13 +23,12 @@ return [
         'kreis'=>[200, 200, 200], 
     ],
     
+    'incresscolor' => 'black',
+    
     'radiusdata' => [
-        1 => 2,
-        2 => 3,
-        3 => 4,
-        4 => 5,
-        5 => 6,
-        6 => 4
+        1 => 7,
+        2 => 10,
+        5 => 14,
     ]
     
 ];

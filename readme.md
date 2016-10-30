@@ -7,14 +7,15 @@
 
 ## Installieren
 ### Composer /Artisan
+entweder
 ```
 composer require equi/opengeodb-laravel
 ```
 
 oder in die composer.json die Zeile "equi/opengeodb-laravel": "~1.0", hinzufügen  
 ```
-...
-"require": {
+    ...
+    "require": {
         "php": ">=5.5.9",
         "laravel/framework": "5.2.*",
         ....
@@ -23,18 +24,27 @@ oder in die composer.json die Zeile "equi/opengeodb-laravel": "~1.0", hinzufügen
     },
     ...
 ```
+
+Beim manuellen Updaten noch den Befehl ausführen
 ```
 composer update
+```
+
+in die /config/app.php im Array "providers" diese Zeile einfügen
+```
+        Equi\Opengeodb\OpengeodbServiceprovider::class,
+```
+
+anschließend default configs/migrations/.. in den /app Ordner kopieren.
+```
 php artisan vendor:publish
-php artisan optimize
 ```
 
 ### Fehlende Dateien suchen
 [OpenGeoDB](http://opengeodb.giswiki.org/wiki/OpenGeoDB) -> [Downloads](http://www.fa-technik.adfc.de/code/opengeodb/)
-Welche Dateien braucht ihr?  
+#### Welche Dateien braucht ihr?  
 Pflicht:
 ```
-opengeodb-begin.sql
 opengeodb-end.sql
 opengeodb_hier.sql
 changes.sql
@@ -55,7 +65,9 @@ LIhier.sql
 Extra.sql    // &Uuml;bergeordnete inhalte (Europa, Amerika, ...) und dazugeh&ouml;rige Sprachen (Deutschland = Germany ...)
 ```
 
-Die Dateien scheinen veraltet diese werden aber in changes.sql aktualisiert  
+Die Dateien scheinen veraltet diese werden aber in changes.sql aktualisiert 
+#### wohin damit?
+Standardmäßig unter __/opengeodb/sql__ oder den festgelegten Ordner in der Config unter __storageopengodbsql__
 
 ### Konfiguration config/opengeodb.php
 
@@ -69,11 +81,12 @@ return [
     'mapcolor' => [
         'black'=>[0, 0, 0], 
         'white'=>[255, 255, 255], 
-        'red'=>[255, 0, 0], 
-        'green'=>[178, 237, 90], 
-        'blue'=>[148, 208, 255], 
-        'grey'=>[148, 208, 255], 
-        'darkgrey'=>[148, 208, 255], 
+        'Therme'=>[255, 0, 0], 
+        'Freizeitbad'=>[178, 237, 90], 
+        'Sauna'=>[148, 208, 255], 
+        'Anderes Bad'=>[148, 208, 255], 
+        'Bad'=>[148, 208, 255], 
+        'Hallenbad'=>[148, 208, 255], 
         'yellow'=>[148, 208, 255], 
         'pink'=>[148, 208, 255],
          
@@ -81,7 +94,9 @@ return [
         'bund'=>[125, 125, 125], 
         'kreis'=>[200, 200, 200], 
     ],
-    // Anzahl => radisgr&ouml;&szlig;e
+    
+    'incresscolor' => 'black',
+    
     'radiusdata' => [
         1 => 7,
         2 => 10,
@@ -92,12 +107,16 @@ return [
 ```
 
 ### Datenbanken erstellen und füllen
+
 ```
-php artisan migrate --seed
+composer dump-autoload
+php artisan migrate
+php artisan db:seed --class=OpengeodbSeeder
 ```
+
 Für manche PHP Konfiguration ist die de.sql zu groß hierfür könnt ihr folgendes versuchen:
 ```
-php -d memory_limit=256M artisan migrate --seed
+php -d memory_limit=256M artisan db:seed --class=OpengeodbSeeder
 ```
 
 ## Einbinden/Benutzen

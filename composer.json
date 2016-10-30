@@ -13,13 +13,10 @@
     },
     "autoload": {
         "psr-4": {
-            "Equi\\Opengeodb\\": "src/"
+            "Equi\\Opengeodb": "src/"
         }
     },
     "version": "1.0-stable",
     "minimum-stability": "stable",
-    "license": "CC-BY-ND-3.0",
-    "require": {
-        "php": ">=5.5.9"
-    }
+    "license": "CC-BY-ND-3.0"
 }
