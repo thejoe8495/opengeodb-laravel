@@ -16,7 +16,7 @@
             "Equi\\Opengeodb\\": "src/Equi/Opengeodb"
         }
     },
-    "version": "1.0.4",
+    "version": "1.0.5",
     "minimum-stability": "stable",
     "license": "CC-BY-ND-3.0"
 }

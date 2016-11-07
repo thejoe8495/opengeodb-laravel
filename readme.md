@@ -67,7 +67,7 @@ Extra.sql    // &Uuml;bergeordnete inhalte (Europa, Amerika, ...) und dazugeh&ou
 
 Die Dateien scheinen veraltet diese werden aber in changes.sql aktualisiert 
 #### wohin damit?
-Standardm‰ﬂig unter __/opengeodb/sql__ oder den festgelegten Ordner in der Config unter __storageopengodbsql__
+Standardm‰ﬂig unter __/Storage/app/opengeodb/sql__ oder den festgelegten Ordner in der Config unter __storageopengodbsql__
 
 ### Konfiguration config/opengeodb.php
 

@@ -298,7 +298,7 @@ class GeoMap extends map {
         if (empty($file))
             \Storage::put(\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".json", serialize($this->imageMap));
         else
-            \Storage::put($file, serialize($this->imageMap));
+            file_put_contents($file, serialize($this->imageMap));
     }
     
     /**
@@ -309,11 +309,11 @@ class GeoMap extends map {
     * @return  void
     * @see     map::dump()
     */
-    private function loadMapJson($file = null) {
+    public function loadMapJson($file = null) {
         if (empty($file))
             $this->imageMap = unserialize(\Storage::get(\Config::get('opengeodb.storagemap') . "/" . $this->loc_id . ".json"));
         else
-            $this->imageMap = unserialize(\Storage::get($file));
+            $this->imageMap = unserialize(file_get_contents($file));
     }
         
     /**
