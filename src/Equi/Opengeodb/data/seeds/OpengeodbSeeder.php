@@ -136,6 +136,9 @@ class OpengeodbSeeder extends Seeder
                 } else
                     DB::statement($line);
             } 
+            if ($i % 1000 == 0) {
+                $output->write(round($i / $lines * 100, 2). '% ' . "\r");
+            }
         }         
         DB::commit();
         $output->writeln('Datei:' . $filename. " fertig");
